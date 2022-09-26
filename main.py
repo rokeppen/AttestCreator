@@ -34,9 +34,8 @@ def set_need_appearances_writer(writer: PdfFileWriter):
         return writer
 
 
-def fill(pdf_name: str, csv_name, max_rate: int, fiscal_year: int):
+def fill(pdf_name: str, csv_name, max_rate: int, fiscal_year: int, send_mail=False):
     pdfin = normpath(join(getcwd(), pdf_name))
-    pdfout = getcwd()
     pdf = PdfFileReader(open(pdfin, "rb"), strict=False)
     if "/AcroForm" in pdf.trailer["/Root"]:
         pdf.trailer["/Root"]["/AcroForm"].update(
@@ -53,7 +52,7 @@ def fill(pdf_name: str, csv_name, max_rate: int, fiscal_year: int):
                 fiscal_year) + "-" + str(j + 1)
             field_dictionary = {"name": str(row[0]),
                                 "firstName": row[1],
-                                "birthDate": birthdate,
+                                "birthdate": birthdate,
                                 "street": row[3],
                                 "nr": row[4],
                                 "zip": row[5],
@@ -81,10 +80,10 @@ def fill(pdf_name: str, csv_name, max_rate: int, fiscal_year: int):
                 pdf2.addPage(pdf.getPage(page))
                 pdf2.updatePageFormFieldValues(pdf2.getPage(page), field_dictionary)
             attest_name = form_id + '.pdf'
-            output = open(normpath(join(pdfout, attest_name)), "wb+")
-            pdf2.write(output)
-            output.close()
-            send_mail(row[7], attest_name)
+            with open('out/' + attest_name, "wb+") as filled:
+                pdf2.write(filled)
+            if send_mail:
+                send_mail(row[7], attest_name)
 
 
 def send_mail(to: str, file_name):
