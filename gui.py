@@ -9,6 +9,7 @@ fiscal_year = IntVar()
 max_rate = DoubleVar()
 should_send_mail = IntVar()
 
+
 def confirm():
     top = Toplevel(win)
     top.geometry("150x40")

@@ -37,7 +37,7 @@ def set_need_appearances_writer(writer: PdfFileWriter):
 
 
 def count_data(list_file_name: str):
-    return pd.read_excel(list_file_name).count()[0]
+    return len(pd.read_excel(list_file_name).index)
 
 
 def fill(pdf_name: str, list_file_name: str, max_rate: float, fiscal_year: int, should_send_mail=False):
@@ -101,7 +101,7 @@ def fill(pdf_name: str, list_file_name: str, max_rate: float, fiscal_year: int, 
         attest_name = form_id + '.pdf'
         with open('out/' + attest_name, "wb+") as filled:
             pdf2.write(filled)
-        if should_send_mail and row["E-mail"]:
+        if should_send_mail and not pd.isna(row["E-mail"]):
             send_mail(row["E-mail"], fiscal_year, first_name, attest_name)
     return True
 
@@ -138,7 +138,7 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv, "mp:l:y:r:", ["pdf=", "list=", "year=", "rate="])
     except getopt.GetoptError:
-        print('generate -p <pdf-form> -l <member list> -y <fiscal-year> -r <maximum reimbursement rate>')
+        print('generate.py -p <pdf-form> -l <member list> -y <fiscal-year> -r <maximum reimbursement rate>')
         sys.exit(2)
     for opt, arg in opts:
         if opt in ("-p", "--pdf"):
@@ -155,4 +155,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main(["-m"])#sys.argv[1:])
