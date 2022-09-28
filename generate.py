@@ -2,6 +2,7 @@ import configparser
 import getopt
 import smtplib
 import sys
+import numpy as np
 from datetime import datetime
 from email import encoders
 from email.mime.base import MIMEBase
@@ -37,7 +38,8 @@ def set_need_appearances_writer(writer: PdfFileWriter):
 
 
 def count_data(list_file_name: str):
-    return len(pd.read_excel(list_file_name).index)
+    df = pd.read_excel(list_file_name)
+    return len(df.loc[(df["Begin periode 1"] - df["Geboortedatum"]) / np.timedelta64(1, 'Y') < 14])
 
 
 def fill(pdf_name: str, list_file_name: str, max_rate: float, fiscal_year: int, should_send_mail=False):
@@ -45,7 +47,8 @@ def fill(pdf_name: str, list_file_name: str, max_rate: float, fiscal_year: int, 
     pdf = PdfFileReader(open(pdfin, "rb"), strict=False)
     if "/AcroForm" in pdf.trailer["/Root"]:
         pdf.trailer["/Root"]["/AcroForm"].update({NameObject("/NeedAppearances"): BooleanObject(True)})
-    for j, row in pd.read_excel(list_file_name).iterrows():
+    df = pd.read_excel(list_file_name)
+    for j, row in df.loc[(df["Begin periode 1"] - df["Geboortedatum"]) / np.timedelta64(1, 'Y') < 14].iterrows():
         pdf2 = PdfFileWriter()
         set_need_appearances_writer(pdf2)
         if "/AcroForm" in pdf2._root_object:
@@ -71,30 +74,32 @@ def fill(pdf_name: str, list_file_name: str, max_rate: float, fiscal_year: int, 
                             "birthdate": birthdate.strftime(date_format),
                             "street": row["Straatnaam"],
                             "nr": row["Huisnummer"],
-                            "zip": row["Postcode"],
+                            "zip": int(row["Postcode"]),
                             "town": row["Gemeente"],
                             "id": form_id,
                             "taxYear": fiscal_year}
         price_total = 0
-        for i in range(8, len(list(filter(None, row))) - 1, 3):
-            period_nr = str((i - 7) // 3 + 1)
+        exceeds_rate = {i: len(df.loc[df["Prijs periode " + str(i)] > max_rate]) > 0 for i in range(1, 5)}
+        print({i: len(df.loc[df["Prijs periode " + str(i)] > max_rate]) for i in range(1, 5)})
+        for i in range(8, len(row) - 1, 3):
+            k = (i - 7) // 3 + 1
             period_from = row[i]
             period_to = row[i + 1]
             period_price = float(row[i + 2])
             period_days = (pd.to_datetime(period_to) - pd.to_datetime(period_from)).days + 1
             period_rate = period_price / period_days
-            if not pd.isna(period_from):
+            if not pd.isna(period_from) and (period_from - birthdate) / np.timedelta64(1, 'Y') < 14:
                 price_total += period_price
-                field_dictionary["period" + period_nr] = f'{period_from.strftime(date_format)} - {period_to.strftime(date_format)}'
-                field_dictionary["period" + period_nr + "Days"] = period_days
-                field_dictionary["period" + period_nr + "Rate"] = "€ " + "{:.2f}".format(period_rate) if period_rate > max_rate else ""
-                field_dictionary["period" + period_nr + "Price"] = "€ " + "{:.2f}".format(period_price)
+                field_dictionary[f'period{k}'] = f'{period_from.strftime(date_format)} - {period_to.strftime(date_format)}'
+                field_dictionary[f'period{k}Days'] = period_days
+                field_dictionary[f'period{k}Rate'] = "€ {:.2f}".format(period_rate) if exceeds_rate[k] else ""
+                field_dictionary[f'period{k}Price'] = "€ {:.2f}".format(period_price)
             else:
-                field_dictionary["period" + period_nr] = ""
-                field_dictionary["period" + period_nr + "Days"] = ""
-                field_dictionary["period" + period_nr + "Rate"] = ""
-                field_dictionary["period" + period_nr + "Price"] = ""
-        field_dictionary["totalPrice"] = "€ " + "{:.2f}".format(price_total)
+                field_dictionary[f'period{k}'] = ""
+                field_dictionary[f'period{k}Days'] = ""
+                field_dictionary[f'period{k}Rate'] = ""
+                field_dictionary[f'period{k}Price'] = ""
+        field_dictionary["totalPrice"] = "€ {:.2f}".format(price_total)
         for page in range(pdf.getNumPages()):
             pdf2.addPage(pdf.getPage(page))
             pdf2.updatePageFormFieldValues(pdf2.getPage(page), field_dictionary)
@@ -110,6 +115,8 @@ def send_mail(to: str, fiscal_year: int, name: str, file_name):
     msg = MIMEMultipart()
     msg['From'] = login_data['username']
     msg['To'] = to
+    if login_data['cc'] != "":
+        msg['Cc'] = login_data['cc']
     msg['Reply-To'] = login_data['reply_to']
     msg['Date'] = formatdate(localtime=True)
     msg['Subject'] = f"Fiscaal attest kinderopvang {fiscal_year}"
@@ -155,4 +162,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    main(["-m"])#sys.argv[1:])
+    main(sys.argv[1:])
