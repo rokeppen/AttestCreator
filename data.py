@@ -21,6 +21,9 @@ class Period:
         return self.start < period.start < self.end or self.start < period.end < self.end \
                or period.start < self.start < period.end
 
+    def __lt__(self, other):
+        return self.start < other.start
+
     def __eq__(self, other):
         return isinstance(other, Period) and self.start == other.start and self.end == other.end
 
@@ -51,7 +54,7 @@ class Person:
         self.email = s(row["E-mail"])
         self.street = s(row["Straatnaam"])
         self.nr = s(row["Huisnummer"])
-        self.zip = s(row["Postcode"])
+        self.zip = int(row["Postcode"]) if s(row["Postcode"]) else None
         self.town = s(row["Gemeente"])
         # self.nis = s(row["Rijksregisternummer"])
 
@@ -90,6 +93,8 @@ class FormData:
     def __init__(self, file_name: str):
         self.children = []
         self.periods = defaultdict(set)
+        if not file_name:
+            return
         for j, row in read_excel(file_name).iterrows():
             name = row["Naam"]
             first_name = row["Voornaam"]
