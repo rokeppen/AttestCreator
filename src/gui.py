@@ -99,7 +99,7 @@ def close_callback(top, window):
 
 def edit_config(data: ConfigData):
     label_text = "vereniging" if data.is_instance() else "certificeerder"
-    config_window = show(win, "Configuratie" + label_text)
+    config_window = show(win, "Configuratie " + label_text)
     Label(config_window, text=f"Bewerk de gegevens van de {label_text}:").grid(row=0, columnspan=2, padx=5)
     labeled_entry(config_window, "Naam:", data.name, 1)
     labeled_entry(config_window, "KBO:", data.kbo, 2)
