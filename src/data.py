@@ -137,4 +137,4 @@ def s(val):
 
 
 if __name__ == "__main__":
-    print(FormData('lijst.xlsx'))
+    print(FormData('../resources/lijst.xlsx'))

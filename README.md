@@ -49,7 +49,7 @@ Wijzig dit template om de inhoud van deze mails te veranderen.
 #### GUI
 Start de tool. Het volgende venster komt dan tevoorschijn:
 
-![tool](app.png)
+![tool](resources/img/app.png)
 
 Het aantal rijen in de excel die aan de voorwaarden voldoet wordt weergegeven. Hier kan ook het fiscale jaar, ingevuld in vak I 
 en in de titel van het attest, aangevuld worden, samen met het gebruikte prijsplafond voor 1 dag opvang van dat jaar. 

@@ -3,7 +3,7 @@ from tkinter import *
 
 parser = RawConfigParser()
 parser.optionxform = str
-config_file_name = 'instance.ini'
+config_file_name = '../config/instance.ini'
 parser.read(config_file_name)
 
 

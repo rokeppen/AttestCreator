@@ -1,5 +1,8 @@
+import glob
+import os
 from itertools import zip_longest
 from PyPDF2 import PdfFileWriter, PdfFileReader
+from os import makedirs, path
 
 from data import FormData
 from instance import instance_data
@@ -7,6 +10,10 @@ from instance import instance_data
 
 def fill(pdf_name: str, data: FormData, max_rate: float, fiscal_year: int, send_mail=False):
     pdf = PdfFileReader(open(pdf_name, "rb"), strict=False)
+    if not path.exists('../out'):
+        makedirs('../out')
+    for f in glob.glob('out/*'):
+        os.remove(f)
     messages = dict()
     for j, child in enumerate(data.children):
         pdf2 = PdfFileWriter()
