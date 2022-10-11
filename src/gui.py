@@ -58,7 +58,7 @@ def generate():
 
 def pop():
     win.title("AttestCreator")
-    win.iconbitmap('icon.ico')
+    win.iconbitmap(default='src/resources/img/icon.ico')
     Label(win, text="Wat wil je doen?").grid(row=0, columnspan=3, padx=5)
     ttk.Button(win, text="Wijzig instellingen", command=configure).grid(row=1, column=0, pady=5)
     ttk.Button(win, text="Genereer attesten", command=generate).grid(row=1, column=1, pady=5)
@@ -76,8 +76,11 @@ def configure():
 
 
 def fill(data: FormData, window):
-    messages = g.fill('attest.pdf', data, max_rate.get(), fiscal_year.get(), send_mail.get())
+    messages = g.fill('src/resources/attest.pdf', data, max_rate.get(), fiscal_year.get(), send_mail.get())
     label, top = ongoing(window)
+    if not send_mail.get():
+        close_callback(top, window)
+        return
     try:
         Thread(target=lambda: worker(messages, label, top, window)).start()
     except Exception:
@@ -124,7 +127,6 @@ def edit_smtp(data: SMTPEdit):
 def show(parent, title, modal=False):
     window = Toplevel(parent)
     window.title(title)
-    window.iconbitmap('icon.ico')
     #if modal:
     #    window.transient(window)
     #    window.grab_set()

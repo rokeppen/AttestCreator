@@ -1,6 +1,8 @@
 import configparser
+import os.path
 import smtplib
 import socket
+from os import path
 from time import time, sleep
 from email import encoders
 from email.mime.base import MIMEBase
@@ -8,12 +10,13 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
 
+import numpy as np
 from numpy import Inf
 
 from src.data import Child
 
 parser = configparser.ConfigParser()
-smtp_file_name = '../config/smtp.ini'
+smtp_file_name = path.join(path.dirname(__file__), 'config', 'smtp.ini')
 parser.read(smtp_file_name)
 
 
@@ -22,7 +25,7 @@ class SMTPData:
     def __init__(self):
         login_data = parser['DEFAULT']
         self.server_name = login_data['server_name']
-        self.port = int(login_data['port'])
+        self.port = int(login_data['port']) if login_data['port'] else None
         self.user = login_data['username']
         self.password = login_data['password']
         self.reply = login_data['reply_to'] if login_data['reply_to'] else self.user
@@ -53,7 +56,7 @@ class SMTPData:
         parser.set("DEFAULT", "password", self.password)
         parser.set("DEFAULT", "reply_to", self.reply)
         parser.set("DEFAULT", "cc", self.cc)
-        parser.set("DEFAULT", "max_mails", str(self.max_mails))
+        parser.set("DEFAULT", "max_mails", str(self.max_mails) if self.max_mails else "")
         with open(smtp_file_name, 'w') as config_file:
             parser.write(config_file)
 
@@ -67,7 +70,7 @@ def build_mail(data: SMTPData, child: Child, fiscal_year: int, form_id: str):
     msg['Reply-To'] = data.reply
     msg['Date'] = formatdate(localtime=True)
     msg['Subject'] = f"Fiscaal attest kinderopvang {fiscal_year}"
-    with open('../config/mailTemplate.html', 'r') as template:
+    with open('config/mailTemplate.html', 'r') as template:
         msg.attach(MIMEText(template.read().format(child.first_name, fiscal_year), 'html'))
     part = MIMEBase('application', "octet-stream")
     with open(f'out/{form_id}.pdf', 'rb') as file:

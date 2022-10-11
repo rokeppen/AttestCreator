@@ -1,5 +1,7 @@
 from tkinter import *
 
+from numpy import Inf
+
 from mail import SMTPData
 
 
@@ -13,7 +15,7 @@ class SMTPEdit(SMTPData):
         self.password_var = StringVar(value=self.password)
         self.reply_var = StringVar(value=self.reply)
         self.cc_var = StringVar(value=self.cc)
-        self.max_mails_var = IntVar(value=self.max_mails)
+        self.max_mails_var = IntVar(value=self.max_mails if self.max_mails != Inf else None)
 
     def save(self):
         self.server_name = self.server_name_var.get()
@@ -22,5 +24,5 @@ class SMTPEdit(SMTPData):
         self.password = self.password_var.get()
         self.reply = self.reply_var.get()
         self.cc = self.cc_var.get()
-        self.max_mails = self.max_mails_var.get()
+        self.max_mails = self.max_mails_var.get() if self.max_mails_var.get() != 0 else None
         super().save()

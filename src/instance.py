@@ -1,9 +1,10 @@
 from configparser import RawConfigParser
+from os import path
 from tkinter import *
 
 parser = RawConfigParser()
 parser.optionxform = str
-config_file_name = '../config/instance.ini'
+config_file_name = path.join(path.dirname(__file__), 'config', 'instance.ini')
 parser.read(config_file_name)
 
 
