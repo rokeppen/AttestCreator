@@ -1,16 +1,15 @@
 import configparser
-import os.path
+import datetime
 import smtplib
 import socket
-from os import path
-from time import time, sleep
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
+from os import path
+from time import time, sleep
 
-import numpy as np
 from numpy import Inf
 
 from src.data import Child
@@ -61,7 +60,7 @@ class SMTPData:
             parser.write(config_file)
 
 
-def build_mail(data: SMTPData, child: Child, fiscal_year: int, form_id: str):
+def build_mail(data: SMTPData, child: Child, fiscal_year: int, form_id: str, signed: bool):
     msg = MIMEMultipart()
     msg['From'] = data.user
     msg['To'] = child.email
@@ -70,10 +69,10 @@ def build_mail(data: SMTPData, child: Child, fiscal_year: int, form_id: str):
     msg['Reply-To'] = data.reply
     msg['Date'] = formatdate(localtime=True)
     msg['Subject'] = f"Fiscaal attest kinderopvang {fiscal_year}"
-    with open('config/mailTemplate.html', 'r') as template:
-        msg.attach(MIMEText(template.read().format(child.first_name, fiscal_year), 'html'))
+    with open(f'config/mailTemplate{"2" if signed else ""}.html', 'r') as template:
+        msg.attach(MIMEText(template.read().format(child.first_name, fiscal_year), 'html', 'utf-8'))
     part = MIMEBase('application', "octet-stream")
-    with open(f'out/{form_id}.pdf', 'rb') as file:
+    with open(f'../{"signed" if signed else "out"}/{form_id}.pdf', 'rb') as file:
         part.set_payload(file.read())
         encoders.encode_base64(part)
         part.add_header('Content-Disposition', f'attachment; filename={form_id}.pdf')
@@ -81,7 +80,7 @@ def build_mail(data: SMTPData, child: Child, fiscal_year: int, form_id: str):
     return msg
 
 
-def send_mails(messages: dict, feedback=print, data: SMTPData = SMTPData()):
+def send_mails(messages: dict, feedback=print, data: SMTPData = SMTPData(), signed: bool = False):
     server = data.login()
     start_time = time()
     current_max = data.max_mails
@@ -92,6 +91,9 @@ def send_mails(messages: dict, feedback=print, data: SMTPData = SMTPData()):
             sleep(60 - passed_time)
             current_max += i - 1
         form_id, fiscal_year = messages[child]
-        server.sendmail(data.user, child.email, build_mail(data, child, fiscal_year, form_id).as_string())
+        server.sendmail(data.user, child.email, build_mail(data, child, fiscal_year, form_id, signed).as_string())
         feedback(f'Mail {i+1}/{len(messages)} gestuurd naar {child.email}.')
     server.quit()
+    
+if __name__ == '__main__':
+    print(build_mail(SMTPData(), Child("Test", "Testje", datetime.datetime.now()), 2022, "WN10082016-2022-0", True).as_string())

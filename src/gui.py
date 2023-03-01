@@ -1,7 +1,6 @@
 from datetime import datetime
 from tkinter import *
 from tkinter import ttk, filedialog
-from idlelib.tooltip import Hovertip
 from threading import Thread
 from shutil import make_archive
 from os import replace
@@ -55,16 +54,16 @@ def generate():
     ttk.Checkbutton(generate_win, text="Verstuur via mail", variable=send_mail, state=NORMAL if SMTPData().test_connection() else DISABLED).grid(row=3, columnspan=2)
     ttk.Button(generate_win, text="Genereer", command=lambda: fill(data, generate_win)).grid(row=4, columnspan=2, pady=5)
 
+def sign():
+    pass
 
 def pop():
     win.title("AttestCreator")
-    win.iconbitmap(default='src/resources/img/icon.ico')
+    #win.iconbitmap(default='src/resources/img/icon.ico')
     Label(win, text="Wat wil je doen?").grid(row=0, columnspan=3, padx=5)
     ttk.Button(win, text="Wijzig instellingen", command=configure).grid(row=1, column=0, pady=5)
     ttk.Button(win, text="Genereer attesten", command=generate).grid(row=1, column=1, pady=5)
-    sign_button = ttk.Button(win, text="Teken attesten", state=DISABLED)
-    sign_button.grid(row=1, column=2, pady=5)
-    Hovertip(sign_button, 'Coming soon!', hover_delay=0)
+    ttk.Button(win, text="Teken attesten", command=sign).grid(row=1, column=2, pady=5)
     win.mainloop()
 
 

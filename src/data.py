@@ -39,10 +39,9 @@ class Period:
 
 class Person:
 
-    def __init__(self, name: str, first_name: str, birthdate):
+    def __init__(self, name: str, first_name: str):
         self.name = name
         self.first_name = first_name
-        self.birthdate = birthdate
         self.email = None
         self.street = None
         self.nr = None
@@ -50,33 +49,38 @@ class Person:
         self.town = None
         self.nis = None
 
-    def extra_data(self, row):
-        self.email = s(row["E-mail"])
-        self.street = s(row["Straatnaam"])
-        self.nr = s(row["Huisnummer"])
-        self.zip = int(row["Postcode"]) if s(row["Postcode"]) else None
-        self.town = s(row["Gemeente"])
-        # self.nis = s(row["Rijksregisternummer"])
+    def extra_data(self, row, suffix = ""):
+        if not suffix:
+            self.email = s(row["E-mail"])
+        self.street = s(row["Straatnaam" + suffix])
+        self.nr = s(row["Huisnummer" + suffix])
+        self.zip = int(row["Postcode" + suffix]) if s(row["Postcode" + suffix]) else None
+        self.town = s(row["Gemeente" + suffix])
+        self.nis = s(row["Rrn" + suffix])
 
     def __eq__(self, other):
-        return isinstance(other, Child) and self.name == other.name \
-               and self.first_name == other.first_name and self.birthdate == other.birthdate
+        return isinstance(other, Child) and self.name == other.name and self.first_name == other.first_name
 
     def __hash__(self):
-        return (hash(self.name) + hash(self.first_name) * 31) * 31 + hash(self.birthdate)
+        return hash(self.name) + hash(self.first_name) * 31
 
     def __str__(self):
-        return f'{self.name}, {self.first_name} - {self.birthdate.strftime("%d/%m/%Y")}'
+        return f'{self.name}, {self.first_name}'
 
 
 class Child(Person):
 
-    def __init__(self, name: str, first_name: str, birthdate):
-        super().__init__(name, first_name, birthdate)
+    def __init__(self, name: str, first_name: str, birthdate, parent: Person = None):
+        super().__init__(name, first_name)
+        self.birthdate = birthdate
         self.periods = dict()
+        self.parent = parent
+
+    def can_add_period(self, period: Period):
+        return not any(p.overlaps(period) for p in self.periods)
 
     def add_period(self, period: Period, price: float):
-        if any(p.overlaps(period) for p in self.periods):
+        if not self.can_add_period(period):
             return False
         self.periods[period] = price
         return True
@@ -95,7 +99,8 @@ class FormData:
         self.periods = defaultdict(set)
         if not file_name:
             return
-        for j, row in read_excel(file_name).iterrows():
+        self.df = read_excel(file_name)
+        for j, row in self.df.iterrows():
             name = row["Naam"]
             first_name = row["Voornaam"]
             birthdate = row["Geboortedatum"]
@@ -103,6 +108,12 @@ class FormData:
                 continue
             child = Child(name, first_name, birthdate)
             child.extra_data(row)
+            name_parent = row["Naam schuldenaar"]
+            first_name_parent = row["Voornaam schuldenaar"]
+            if not isna(name_parent) and not isna(first_name_parent):
+                parent = Person(name_parent, first_name_parent)
+                parent.extra_data(row, " schuldenaar")
+                child.parent = parent
             for i in range(4):
                 if not (isna(row[pb[i]]) or isna(row[pe[i]]) or isna(row[pp[i]])) and valid_age(row[pb[i]], birthdate):
                     period = Period(row[pb[i]], row[pe[i]])
@@ -110,10 +121,18 @@ class FormData:
                         self.periods[period].add(row[pp[i]])
                         self.children.append(child)
                     elif child in self.children:
-                        known_child = self.children[self.children.index(child)]
-                        if known_child.add_period(period, row[pp[i]]):
-                            self.periods[period].add(row[pp[i]])
-                            known_child.email = child.email if not known_child.email else known_child.email
+                        known_children = [c for c in self.children if c == child]
+                        if not all(c.can_add_period(period) for c in known_children):
+                            continue
+                        if all(len(c.periods) == 4 for c in known_children):
+                            if child.add_period(period, row[pp[i]]):
+                                self.periods[period].add(row[pp[i]])
+                                self.children.append(child)
+                        else:
+                            known_child = next(filter(lambda c: len(c.periods) != 4, known_children), None)
+                            if known_child.add_period(period, row[pp[i]]):
+                                self.periods[period].add(row[pp[i]])
+                                known_child.email = child.email if not known_child.email else known_child.email
 
     def __len__(self):
         return len(self.children)
@@ -134,7 +153,3 @@ def valid_age(c1, c2):
 
 def s(val):
     return "" if isna(val) else val
-
-
-if __name__ == "__main__":
-    print(FormData('resources/lijst.xlsx'))

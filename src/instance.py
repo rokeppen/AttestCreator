@@ -9,9 +9,8 @@ parser.read(config_file_name)
 
 
 def instance_data():
-    x = {"instance" + k: v for k, v in parser['INSTANCE'].items()}
-    y = {"certifier" + k: v for k, v in parser['CERTIFIER'].items()}
-    return x | y
+    return {"instance" + k: v for k, v in parser['INSTANCE'].items()} | \
+           {"certifier" + k: v for k, v in parser['CERTIFIER'].items()}
 
 
 class ConfigData:
@@ -25,6 +24,7 @@ class ConfigData:
         self.nr = StringVar(value=instance["Nr"])
         self.zip = StringVar(value=instance["Zip"])
         self.town = StringVar(value=instance["Town"])
+        self.authorizer = StringVar(value=instance["Authorizer"])
 
     def is_instance(self):
         return self.section == "INSTANCE"
